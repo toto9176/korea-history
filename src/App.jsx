@@ -1000,10 +1000,15 @@ const App = () => {
     const timeSpent = Math.floor((endTime - currentExam.startTime) / 1000);
     
     let correctCount = 0;
-    currentExam.questions.forEach(question => {
-      if (userAnswers[question.id] === question.answer) {
+    const questionsWithAnswers = currentExam.questions.map(question => {
+      const isCorrect = userAnswers[question.id] === question.answer;
+      if (isCorrect) {
         correctCount++;
       }
+      return {
+        ...question,
+        userAnswer: userAnswers[question.id] || null
+      };
     });
 
     const score = Math.round((correctCount / currentExam.questions.length) * 100);
@@ -1015,6 +1020,7 @@ const App = () => {
       totalQuestions: currentExam.questions.length,
       timeSpent,
       answers: userAnswers,
+      questions: questionsWithAnswers,
       date: new Date()
     };
 
@@ -1040,7 +1046,7 @@ const App = () => {
         <div className="relative z-10">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/1713750970271.jpg" 
+              src="/korea/1713750970271.jpg" 
               alt="한국사 시험" 
               className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-white border-opacity-30"
             />
@@ -1291,6 +1297,32 @@ const App = () => {
           >
             다시 시험보기
           </button>
+        </div>
+
+        {/* 정답 및 해설 */}
+        <div className="mt-8">
+          <h3 className="text-lg font-bold mb-4">정답 및 해설</h3>
+          <div className="space-y-4">
+            {examResult.questions.map((q, idx) => (
+              <div key={q.id} className="bg-gray-50 rounded-xl p-4">
+                <div className="font-bold mb-2">Q{idx + 1}. {q.question}</div>
+                <div className="mb-1">
+                  <span className="font-semibold">내 답: </span>
+                  <span className={q.userAnswer === q.answer ? "text-green-600" : "text-red-600"}>
+                    {q.userAnswer || "미응답"}
+                  </span>
+                </div>
+                <div className="mb-1">
+                  <span className="font-semibold">정답: </span>
+                  <span className="text-blue-600">{q.answer}</span>
+                </div>
+                <div className="text-gray-600 text-sm">
+                  <span className="font-semibold">해설: </span>
+                  {q.explanation}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

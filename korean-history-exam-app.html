@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국사 검정시험</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="max-w-md mx-auto bg-gray-50 min-h-screen relative pb-20">
+        <!-- 초기 로딩 중... -->
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-center">
+                <div class="text-4xl mb-4">📚</div>
+                <div class="text-lg font-bold text-gray-800">한국사 검정시험</div>
+                <div class="text-sm text-gray-600">로딩 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('앱 시작');
+        
+        // 앱 상태 관리
+        let currentScreen = 'home';
+        let currentExam = null;
+        let examResults = [];
+        let remainingTime = null;
+        let timer = null;
+        
+        // 사용자 통계
+        let userStats = {
+            totalScore: 320,
+            correctAnswers: 45,
+            totalAnswers: 60,
+            streak: 3,
+            studyDays: 12,
+            level: 4
+        };
+
+        // 시험 기록
+        let examHistory = [
+            {
+                id: 1,
+                era: '선사시대',
+                score: 90,
+                date: new Date(Date.now() - 86400000),
+                passed: true
+            },
+            {
+                id: 2,
+                era: '고조선',
+                score: 75,
+                date: new Date(Date.now() - 172800000),
+                passed: false
+            }
+        ];
+
+        // 시대별 문제 데이터
+        const examQuestions = {
+            '선사시대': [
+                {
+                    id: 1,
+                    question: '구석기 시대의 특징으로 가장 적절한 것은?',
+                    options: [
+                        '농업과 목축을 시작하였다',
+                        '사냥과 채집으로 식량을 확보하였다',
+                        '청동기를 사용하였다',
+                        '정착 생활을 하였다'
+                    ],
+                    answer: '사냥과 채집으로 식량을 확보하였다',
+                    explanation: '구석기 시대는 사냥과 채집을 통해 식량을 확보하는 이동 생활을 했습니다.'
+                },
+                {
+                    id: 2,
+                    question: '신석기 시대의 대표적인 토기는?',
+                    options: ['민무늬 토기', '빗살무늬 토기', '회청색 토기', '백자'],
+                    answer: '빗살무늬 토기',
+                    explanation: '신석기 시대의 대표적인 토기는 빗살무늬 토기입니다.'
+                },
+                {
+                    id: 3,
+                    question: '청동기 시대의 대표적인 무덤은?',
+                    options: ['움무덤', '고인돌', '횡혈식 석실분', '앞트기식 돌덧널무덤'],
+                    answer: '고인돌',
+                    explanation: '청동기 시대의 대표적인 무덤은 고인돌입니다.'
+                }
+            ],
+            '고조선': [
+                {
+                    id: 11,
+                    question: '고조선의 건국 신화에 등장하는 인물은?',
+                    options: ['동명왕', '단군', '온조왕', '박혁거세'],
+                    answer: '단군',
+                    explanation: '고조선은 단군왕검이 건국했다고 전해집니다.'
+                },
+                {
+                    id: 12,
+                    question: '고조선의 8조법 중 현재 전해지는 것은 몇 조인가?',
+                    options: ['1조', '3조', '5조', '8조'],
+                    answer: '3조',
+                    explanation: '고조선의 8조법 중 현재는 3조만 전해집니다.'
+                },
+                {
+                    id: 13,
+                    question: '위만조선을 멸망시킨 나라는?',
+                    options: ['고구려', '백제', '한나라', '신라'],
+                    answer: '한나라',
+                    explanation: '한나라 무제가 위만조선을 멸망시켰습니다.'
+                }
+            ],
+            '삼국시대': [
+                {
+                    id: 21,
+                    question: '고구려의 전성기를 이끈 왕은?',
+                    options: ['동명왕', '광개토대왕', '장수왕', '연개소문'],
+                    answer: '광개토대왕',
+                    explanation: '광개토대왕은 고구려의 전성기를 이끈 왕입니다.'
+                },
+                {
+                    id: 22,
+                    question: '백제가 일본에 전해준 문화는?',
+                    options: ['불교와 한학', '도교', '청동기 기술', '철기 기술'],
+                    answer: '불교와 한학',
+                    explanation: '백제는 일본에 불교와 한학을 전해주었습니다.'
+                },
+                {
+                    id: 23,
+                    question: '신라의 신분제도는?',
+                    options: ['8조법', '골품제', '문벌 귀족제', '양반제'],
+                    answer: '골품제',
+                    explanation: '신라는 골품제라는 엄격한 신분제를 시행했습니다.'
+                }
+            ],
+            '통일신라': [
+                {
+                    id: 31,
+                    question: '통일신라의 지방 행정구역은?',
+                    options: ['5도 양계', '9주 5소경', '8도', '23부'],
+                    answer: '9주 5소경',
+                    explanation: '통일신라는 9주 5소경의 지방 행정구역을 두었습니다.'
+                },
+                {
+                    id: 32,
+                    question: '통일신라의 대표적인 문화유산은?',
+                    options: ['첨성대', '불국사와 석굴암', '다보탑', '분황사'],
+                    answer: '불국사와 석굴암',
+                    explanation: '불국사와 석굴암은 통일신라의 대표적인 문화유산입니다.'
+                },
+                {
+                    id: 33,
+                    question: '통일신라 말기에 등장한 세력은?',
+                    options: ['문벌 귀족', '6두품', '호족', '진골'],
+                    answer: '호족',
+                    explanation: '통일신라 말기에는 지방 호족 세력이 성장했습니다.'
+                }
+            ],
+            '고려': [
+                {
+                    id: 41,
+                    question: '고려의 국교는?',
+                    options: ['유교', '불교', '도교', '기독교'],
+                    answer: '불교',
+                    explanation: '고려는 불교를 국교로 삼았습니다.'
+                },
+                {
+                    id: 42,
+                    question: '고려의 대표적인 도자기는?',
+                    options: ['백자', '청자', '분청사기', '옹기'],
+                    answer: '청자',
+                    explanation: '고려청자는 세계적으로 유명한 고려의 대표 도자기입니다.'
+                },
+                {
+                    id: 43,
+                    question: '무신정변이 일어난 연도는?',
+                    options: ['1170년', '1180년', '1190년', '1200년'],
+                    answer: '1170년',
+                    explanation: '무신정변은 1170년에 일어났습니다.'
+                }
+            ],
+            '조선전기': [
+                {
+                    id: 51,
+                    question: '조선의 통치 이념은?',
+                    options: ['불교', '성리학', '실학', '양명학'],
+                    answer: '성리학',
+                    explanation: '조선은 성리학을 통치 이념으로 삼았습니다.'
+                },
+                {
+                    id: 52,
+                    question: '한글을 창제한 왕은?',
+                    options: ['태조', '태종', '세종', '세조'],
+                    answer: '세종',
+                    explanation: '세종대왕이 한글(훈민정음)을 창제했습니다.'
+                },
+                {
+                    id: 53,
+                    question: '조선의 신분제는?',
+                    options: ['골품제', '양반, 중인, 상민, 천민', '문벌 귀족제', '관품제'],
+                    answer: '양반, 중인, 상민, 천민',
+                    explanation: '조선은 양반, 중인, 상민, 천민의 4계층 신분제를 두었습니다.'
+                }
+            ],
+            '조선후기': [
+                {
+                    id: 61,
+                    question: '조선후기에 등장한 학문은?',
+                    options: ['성리학', '실학', '양명학', '훈고학'],
+                    answer: '실학',
+                    explanation: '조선후기에는 현실 개혁을 추구하는 실학이 등장했습니다.'
+                },
+                {
+                    id: 62,
+                    question: '영조가 실시한 정치는?',
+                    options: ['붕당정치', '탕평정치', '세도정치', '친정체제'],
+                    answer: '탕평정치',
+                    explanation: '영조는 붕당 간의 대립을 완화하는 탕평정치를 실시했습니다.'
+                },
+                {
+                    id: 63,
+                    question: '조선후기 대표적인 문학은?',
+                    options: ['한문소설', '한글소설', '가사', '시조'],
+                    answer: '한글소설',
+                    explanation: '조선후기에는 홍길동전, 춘향전 등 한글소설이 발달했습니다.'
+                }
+            ]
+        };
+
+        const eras = ['선사시대', '고조선', '삼국시대', '통일신라', '고려', '조선전기', '조선후기'];
+
+        // 시험 시작
+        function startExam(era) {
+            console.log('시험 시작:', era);
+            const questions = examQuestions[era] || [];
+            if (questions.length === 0) return;
+            
+            currentExam = {
+                era,
+                questions: [...questions],
+                currentQuestion: 0,
+                answers: {},
+                startTime: new Date()
+            };
+            remainingTime = questions.length * 90;
+            currentScreen = 'exam';
+            render();
+            startTimer();
+        }
+
+        // 타이머 시작
+        function startTimer() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                if (remainingTime > 0) {
+                    remainingTime--;
+                    updateTimer();
+                } else {
+                    finishExam();
+                }
+            }, 1000);
+        }
+
+        // 타이머 업데이트
+        function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                timerElement.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            }
+        }
+
+        // 답안 선택
+        function selectAnswer(questionId, answer) {
+            if (!currentExam) return;
+            currentExam.answers[questionId] = answer;
+            render();
+        }
+
+        // 다음 문제
+        function nextQuestion() {
+            if (!currentExam) return;
+            
+            if (currentExam.currentQuestion < currentExam.questions.length - 1) {
+                currentExam.currentQuestion++;
+                render();
+            } else {
+                finishExam();
+            }
+        }
+
+        // 이전 문제
+        function prevQuestion() {
+            if (!currentExam || currentExam.currentQuestion === 0) return;
+            currentExam.currentQuestion--;
+            render();
+        }
+
+        // 시험 완료
+        function finishExam() {
+            if (!currentExam) return;
+            if (timer) clearInterval(timer);
+
+            const results = currentExam.questions.map(q => {
+                const userAnswer = currentExam.answers[q.id];
+                const isCorrect = userAnswer === q.answer;
+                return { ...q, userAnswer, isCorrect };
+            });
+
+            const correctCount = results.filter(r => r.isCorrect).length;
+            const score = Math.round((correctCount / results.length) * 100);
+            const passed = score >= 80;
+
+            // 통계 업데이트
+            userStats.totalScore += score;
+            userStats.correctAnswers += correctCount;
+            userStats.totalAnswers += results.length;
+            userStats.streak = passed ? userStats.streak + 1 : 0;
+            userStats.level = Math.floor(userStats.totalScore / 100) + 1;
+
+            // 시험 기록 추가
+            const newExamResult = {
+                id: Date.now(),
+                era: currentExam.era,
+                score,
+                date: new Date(),
+                passed
+            };
+            examHistory.unshift(newExamResult);
+
+            examResults = results;
+            currentScreen = 'examResult';
+            render();
+
+            // 음성 피드백
+            setTimeout(() => {
+                playVoiceFeedback(passed ? '현정이 아주잘했어' : '현정이 더 열심히 해봐요');
+            }, 1000);
+        }
+
+        // 음성 피드백
+        function playVoiceFeedback(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.pitch = 2.0;
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // 화면 전환
+        function setCurrentScreen(screen) {
+            currentScreen = screen;
+            render();
+        }
+
+        // 시간 포맷팅
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+            if (diffInHours < 1) return '방금 전';
+            if (diffInHours < 24) return diffInHours + '시간 전';
+            return Math.floor(diffInHours / 24) + '일 전';
+        }
+
+        // 홈 화면
+        function renderHomeScreen() {
+            const icons = ['🦕', '🏛️', '⚔️', '👑', '🏯', '🎨', '📜'];
+            const accuracy = userStats.totalAnswers > 0 
+                ? Math.round((userStats.correctAnswers / userStats.totalAnswers) * 100)
+                : 0;
+
+            return `
+                <div class="bg-custom min-h-screen">
+                    <div class="px-6 pt-12">
+                        <div class="text-center mb-8">
+                            <div class="flex justify-between items-center mb-6">
+                                <h1 class="text-2xl font-bold text-white">한국사 검정시험</h1>
+                                <div class="text-white/80 text-sm">by 머슴이</div>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-xl mb-2 text-white">안녕하세요, 현정님! 🐱</h2>
+                                <p class="text-white/90">오늘도 열심히 공부해봐요 💪</p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4 mb-8">
+                                <div class="bg-white/20 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl font-bold text-white">${userStats.streak}</div>
+                                    <div class="text-sm text-white/80">연속 합격</div>
+                                </div>
+                                <div class="bg-white/20 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl font-bold text-white">${userStats.totalScore}</div>
+                                    <div class="text-sm text-white/80">총 점수</div>
+                                </div>
+                                <div class="bg-white/20 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl font-bold text-white">${accuracy}%</div>
+                                    <div class="text-sm text-white/80">정답률</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/90 rounded-3xl p-6 mb-6">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">시대별 시험 선택</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                ${eras.map((era, index) => {
+                                    const questionCount = examQuestions[era]?.length || 0;
+                                    return `
+                                        <button
+                                            onclick="startExam('${era}')"
+                                            class="bg-white border-2 border-gray-100 rounded-2xl p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all"
+                                        >
+                                            <div class="text-2xl mb-2">${icons[index]}</div>
+                                            <h4 class="font-bold text-gray-900 mb-1">${era}</h4>
+                                            <p class="text-sm text-gray-500">${questionCount}문제</p>
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-white/90 rounded-3xl p-6">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">최근 시험 결과</h3>
+                            <div class="space-y-3">
+                                ${examHistory.slice(0, 2).map(exam => `
+                                    <div class="flex items-center justify-between bg-white rounded-xl p-3">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-5 h-5 rounded-full ${exam.passed ? 'bg-green-500' : 'bg-red-500'}"></div>
+                                            <div>
+                                                <div class="font-medium">${exam.era} 시험</div>
+                                                <div class="text-sm text-gray-500">${exam.score}점 • ${formatTimeAgo(exam.date)}</div>
+                                            </div>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-sm ${
+                                            exam.passed ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                        }">
+                                            ${exam.passed ? '합격' : '불합격'}
+                                        </span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 시험 화면
+        function renderExamScreen() {
+            if (!currentExam) return '';
+
+            const currentQ = currentExam.questions[currentExam.currentQuestion];
+            const progress = ((currentExam.currentQuestion + 1) / currentExam.questions.length) * 100;
+            const selectedAnswer = currentExam.answers[currentQ.id];
+
+            return `
+                <div class="bg-white min-h-screen">
+                    <div class="bg-blue-600 px-6 pt-12 pb-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <button onclick="setCurrentScreen('home')">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <div class="text-center">
+                                <h1 class="text-lg font-bold">${currentExam.era} 시험</h1>
+                                <p class="text-sm">${currentExam.currentQuestion + 1} / ${currentExam.questions.length}</p>
+                            </div>
+                            <div class="text-sm" id="timer">0:00</div>
+                        </div>
+                        
+                        <div class="bg-white/20 rounded-full h-2">
+                            <div class="bg-white h-2 rounded-full" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-6">
+                        <div class="bg-gray-50 rounded-2xl p-6 mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm">
+                                    문제 ${currentExam.currentQuestion + 1}
+                                </span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900">${currentQ.question}</h3>
+                        </div>
+
+                        <div class="space-y-3 mb-8">
+                            ${currentQ.options.map((option, index) => `
+                                <button
+                                    onclick="selectAnswer(${currentQ.id}, '${option}')"
+                                    class="w-full p-4 rounded-2xl text-left transition-all ${
+                                        selectedAnswer === option
+                                            ? 'bg-blue-50 border-2 border-blue-400'
+                                            : 'bg-white border-2 border-gray-100'
+                                    }"
+                                >
+                                    <div class="flex items-center">
+                                        <span class="w-8 h-8 rounded-full border-2 mr-4 flex items-center justify-center font-bold ${
+                                            selectedAnswer === option
+                                                ? 'border-blue-400 bg-blue-400 text-white'
+                                                : 'border-gray-300'
+                                        }">
+                                            ${index + 1}
+                                        </span>
+                                        <span>${option}</span>
+                                    </div>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <div class="flex space-x-4">
+                            <button
+                                onclick="prevQuestion()"
+                                ${currentExam.currentQuestion === 0 ? 'disabled' : ''}
+                                class="flex-1 py-4 rounded-2xl font-bold ${
+                                    currentExam.currentQuestion === 0
+                                        ? 'bg-gray-100 text-gray-300'
+                                        : 'bg-purple-600 text-white'
+                                }"
+                            >
+                                이전 문제
+                            </button>
+                            <button
+                                onclick="${currentExam.currentQuestion === currentExam.questions.length - 1 ? 'finishExam()' : 'nextQuestion()'}"
+                                ${!selectedAnswer ? 'disabled' : ''}
+                                class="flex-1 py-4 rounded-2xl font-bold ${
+                                    !selectedAnswer
+                                        ? 'bg-gray-300 text-gray-500'
+                                        : 'bg-blue-600 text-white'
+                                }"
+                            >
+                                ${currentExam.currentQuestion === currentExam.questions.length - 1 ? '시험 완료' : '다음 문제'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 시험 결과 화면
+        function renderExamResultScreen() {
+            const correctCount = examResults.filter(r => r.isCorrect).length;
+            const score = Math.round((correctCount / examResults.length) * 100);
+            const passed = score >= 80;
+
+            return `
+                <div class="bg-white min-h-screen">
+                    <div class="px-6 pt-12 pb-8 text-white ${passed ? 'bg-green-500' : 'bg-red-500'}">
+                        <div class="text-center">
+                            <div class="text-6xl mb-4">${passed ? '🎉' : '😢'}</div>
+                            <h1 class="text-2xl font-bold mb-2">${passed ? '합격입니다!' : '불합격입니다'}</h1>
+                            <p class="text-lg">${score}점</p>
+                            <p class="text-sm opacity-90">${correctCount}문제 정답 / 총 ${examResults.length}문제</p>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-6">
+                        <div class="space-y-3 mb-8">
+                            <h3 class="font-bold text-gray-900">문제별 결과</h3>
+                            ${examResults.map((result, index) => `
+                                <div class="bg-white border rounded-2xl p-4">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                                            result.isCorrect ? 'bg-green-500' : 'bg-red-500'
+                                        }">
+                                            ${index + 1}
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="font-medium mb-2">${result.question}</div>
+                                            <div class="text-sm space-y-1">
+                                                <div class="text-green-600">✓ 정답: ${result.answer}</div>
+                                                ${!result.isCorrect ? `<div class="text-red-600">✗ 선택: ${result.userAnswer || '미선택'}</div>` : ''}
+                                                <div class="text-gray-500 text-xs mt-2">${result.explanation}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <button
+                            onclick="setCurrentScreen('home')"
+                            class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold"
+                        >
+                            홈으로 돌아가기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 메인 렌더링 함수
+        function render() {
+            console.log('렌더링:', currentScreen);
+            let content = '';
+            
+            switch (currentScreen) {
+                case 'home':
+                    content = renderHomeScreen();
+                    break;
+                case 'exam':
+                    content = renderExamScreen();
+                    break;
+                case 'examResult':
+                    content = renderExamResultScreen();
+                    break;
+                default:
+                    content = renderHomeScreen();
+            }
+
+            document.getElementById('app').innerHTML = content;
+            
+            if (currentScreen === 'exam' && remainingTime !== null) {
+                updateTimer();
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 로드 완료');
+            setTimeout(() => {
+                render();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
