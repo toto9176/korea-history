@@ -1046,7 +1046,7 @@ const App = () => {
         <div className="relative z-10">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/korea/1713750970271.jpg" 
+              src="/korea-history/1713750970271.jpg" 
               alt="한국사 시험" 
               className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-white border-opacity-30"
             />
